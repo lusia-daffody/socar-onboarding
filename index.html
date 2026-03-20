@@ -500,7 +500,45 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f0f0;font-family:
     <div class="meta-item"><div class="meta-val">20:00</div><div class="meta-label">TIME LIMIT</div></div>
     <div class="meta-item"><div class="meta-val">♥ × 10</div><div class="meta-label">LIVES</div></div>
   </div>
-  <button class="btn-enter" onclick="startGame()">입장하기 →</button>
+  <!-- 조 정보 입력 -->
+  <div style="background:#fff;border:1.5px solid #e8e8e8;border-radius:14px;padding:20px 24px;max-width:360px;width:100%;margin:0 auto 1.4rem;text-align:left;box-shadow:0 2px 12px rgba(0,0,0,0.05)">
+    <div style="font-size:12px;font-weight:500;color:#aaa;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px">조 정보 입력</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:4px">진행 연도</div>
+        <select id="sel-year" style="width:100%;padding:8px 10px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:14px;font-family:'Noto Sans KR',sans-serif;color:#333;background:#f8f8f8;outline:none;cursor:pointer">
+          <option value="">선택</option>
+          <option value="2026">2026년</option>
+          <option value="2027">2027년</option>
+          <option value="2028">2028년</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:4px">진행 월</div>
+        <select id="sel-month" style="width:100%;padding:8px 10px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:14px;font-family:'Noto Sans KR',sans-serif;color:#333;background:#f8f8f8;outline:none;cursor:pointer">
+          <option value="">선택</option>
+          <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+          <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+          <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+          <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:4px">조 번호</div>
+        <select id="sel-team" style="width:100%;padding:8px 10px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:14px;font-family:'Noto Sans KR',sans-serif;color:#333;background:#f8f8f8;outline:none;cursor:pointer">
+          <option value="">선택</option>
+          <option value="1">1조</option><option value="2">2조</option><option value="3">3조</option>
+          <option value="4">4조</option><option value="5">5조</option><option value="6">6조</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#aaa;margin-bottom:4px">조 이름</div>
+        <input id="inp-teamname" type="text" placeholder="조 이름 입력" maxlength="20"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:14px;font-family:'Noto Sans KR',sans-serif;color:#333;background:#f8f8f8;outline:none"/>
+      </div>
+    </div>
+  </div>
+  <button class="btn-enter" onclick="tryStart()">입장하기 →</button>
   <div style="margin-top:14px;font-size:12px;color:#aaa;letter-spacing:0.3px">하트 10개를 모두 소진하면, 최종 점수가 50% 감점됩니다.</div>
 </div>
 <div id="room-transition">
@@ -542,6 +580,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f0f0;font-family:
   </div>
   <div style="display:flex;gap:8px;justify-content:center;margin-bottom:1.5rem">
     <button class="btn-retry" onclick="resetGame()">다시 도전하기</button>
+    <button id="submit-btn" onclick="submitResult()" style="background:#2b7fe1;border:none;color:#fff;padding:10px 24px;border-radius:50px;cursor:pointer;font-size:14px;font-family:'Noto Sans KR',sans-serif;font-weight:600;transition:all 0.2s">결과 제출 📤</button>
   </div>
 
   <!-- 전체 문제 리뷰 -->
@@ -694,6 +733,94 @@ function updateGlow(){
     el=document.querySelector('[id="'+domId+'"]');
   }
   if(el)el.classList.add('next-glow');
+}
+
+// ── 구글 시트 연동 ──
+// 아래 URL을 본인의 Apps Script 웹앱 URL로 교체하세요
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbwDR3TLfZW8mPgn_wyYelaH9MExSCTQlpIq_b6gSgtbkWU6wsxvDaY9_R0z1B-gjzUU/exec';
+
+function tryStart(){
+  const year=document.getElementById('sel-year').value;
+  const month=document.getElementById('sel-month').value;
+  const team=document.getElementById('sel-team').value;
+  const name=document.getElementById('inp-teamname').value.trim();
+  if(!year||!month||!team||!name){
+    showAlert('⚠️ 모든 항목을 입력해주세요!\n진행연도, 진행월, 조번호, 조이름');
+    return;
+  }
+  G.teamInfo={year,month,team,name};
+  startGame();
+}
+
+function submitResult(){
+  const btn=document.getElementById('submit-btn');
+  if(!SHEET_URL||SHEET_URL==='YOUR_APPS_SCRIPT_URL_HERE'){
+    showAlert('⚠️ 아직 구글 시트 연결이 설정되지 않았어요.\nSHEET_URL을 입력해주세요.');
+    return;
+  }
+  btn.textContent='전송 중...';
+  btn.disabled=true;
+  const elapsed=G.elapsed||0;
+  const score=G.finalScore||0;
+  sendToSheet(G.gameWin, elapsed, score);
+  setTimeout(()=>{
+    btn.textContent='✅ 제출 완료!';
+    btn.style.background='#1a8060';
+    btn.disabled=true;
+  },1200);
+}
+
+function sendToSheet(win, elapsed, score){
+  if(!SHEET_URL||SHEET_URL==='YOUR_APPS_SCRIPT_URL_HERE') return;
+  const info=G.teamInfo||{year:'',month:'',team:'',name:''};
+  const em=Math.floor(elapsed/60),es=elapsed%60;
+
+  // 오답노트: "Q1(핵심가치):내답=Speed First | Q3(미션):내답=쏘카는기술로..." 형식
+  const qLabels={
+    bookshelf:'R1-Q1(핵심가치)', whiteboard:'R1-Q2(비전)', cabinet:'R1-Q3(미션)',
+    laptop:'R1-Q4(SOCAR줄임말)', envelope:'R1-Q5(상장일)', phone:'R1-Q6(초기차량수)',
+    sticky:'R1-Q7(창립연도)', badge:'R1-Q8(Impact)',
+    tv:'R2-Q1(점심시간)', wb2:'R2-Q2(출근시간)', notepad:'R2-Q3(인사증명서)',
+    pen:'R2-Q4(Jira)', r2laptop:'R2-Q5(비용처리)', remote:'R2-Q6(최단휴가)',
+    r2badge1:'R2-Q7(연차규정)', r2badge2:'R2-Q8(OneSocar)',
+    shelf2:'R3-Q1(free_talk)', coffeetable:'R3-Q2(q&a)', stool:'R3-Q3(sofam)',
+    plant:'R3-Q4(ai_first)', sofa:'R3-Q5(user_first)', window:'R3-Q6(다양성)',
+    pantry:'R3-Q7(기자대응)', privacy:'R3-Q8(프라이버시)', cm2:'R3-Q9(WiFi)'
+  };
+
+  const wrongNotes=[];
+  ROOMS.forEach((room,ri)=>{
+    room.required.forEach(objId=>{
+      const key=(ri+1)+'_'+objId;
+      const entries=G.wrongLog.filter(w=>w.key===key);
+      if(entries.length>0){
+        const label=qLabels[objId]||objId;
+        const myAns=entries.map(w=>w.myAns).join('/');
+        wrongNotes.push(label+':내답='+myAns);
+      }
+    });
+  });
+
+  const data={
+    year: info.year,
+    month: info.month,
+    teamNum: info.team,
+    teamName: info.name,
+    result: win?'성공':'실패',
+    timeUsed: String(em).padStart(2,'0')+'분'+String(es).padStart(2,'0')+'초',
+    mistakes: G.wrong,
+    livesLeft: G.lives,
+    score: score,
+    date: new Date().toLocaleDateString('ko-KR'),
+    wrongNote: wrongNotes.length>0 ? wrongNotes.join(' | ') : '오답없음'
+  };
+
+  fetch(SHEET_URL,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  }).catch(()=>{});
 }
 
 function startGame(){
@@ -1021,6 +1148,7 @@ function recalcScore(){
   let score = calcScore(elapsed, G.lives, hintCount);
   if(G.scorePenalty) score = Math.round(score * (1 - G.scorePenalty));
   score = Math.max(0, score);
+  G.finalScore = score;
   animateScore(score);
   document.getElementById('cert-score').textContent = score.toLocaleString() + '점';
 }
@@ -1049,12 +1177,18 @@ function endGame(win,reason){
     if(hintInput) hintInput.value='0';
     if(hintBox) hintBox.style.display='block';
     const score=calcScore(elapsed, G.lives, 0);
+    G.finalScore=score;
+    G.elapsed=elapsed;
+    G.gameWin=win;
     animateScore(score);
   }else{
     scoreEl.textContent='—';
     certScore.textContent='도전 실패';
     certScore.style.color='#aaa';
     if(hintBox) hintBox.style.display='none';
+    G.finalScore=0;
+    G.elapsed=elapsed;
+    G.gameWin=false;
   }
 
   document.getElementById('end-screen').classList.add('show');
@@ -1183,6 +1317,8 @@ function resetGame(){
   dialCurrent={};
   if(window._multiSelected)window._multiSelected={};
   document.querySelectorAll('.heart').forEach(h=>{h.className='heart';h.textContent='♥';});
+  const sb=document.getElementById('submit-btn');
+  if(sb){sb.textContent='결과 제출 📤';sb.style.background='#2b7fe1';sb.disabled=false;}
   const rs=document.getElementById('review-section');
   if(rs)rs.style.display='none';
   const cb=document.getElementById('continue-box');
