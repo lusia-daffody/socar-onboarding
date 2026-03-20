@@ -451,7 +451,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f0f0;font-family:
 <div id="hud">
   <div id="room-indicator">ROOM 01 / 03</div>
   <div id="timer-box">20:00</div>
-  <div id="lives-box"><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span></div>
+  <div id="lives-box"><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span></div>
 </div>
 <button id="hint-btn" onclick="toggleHint()">💡 힌트</button>
 <div id="hint-popup">
@@ -475,7 +475,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f0f0;font-family:
   <div class="intro-meta">
     <div class="meta-item"><div class="meta-val">3</div><div class="meta-label">ROOMS</div></div>
     <div class="meta-item"><div class="meta-val">20:00</div><div class="meta-label">TIME LIMIT</div></div>
-    <div class="meta-item"><div class="meta-val">♥ × 3</div><div class="meta-label">LIVES</div></div>
+    <div class="meta-item"><div class="meta-val">♥ × 10</div><div class="meta-label">LIVES</div></div>
   </div>
   <button class="btn-enter" onclick="startGame()">입장하기 →</button>
 </div>
@@ -619,7 +619,7 @@ const PZ={
     ans:'C',r:'단서 9/9 — 탈출 성공! 🎉 진정한 쏘팸이 되었습니다!'},
 };
 
-let G={room:1,solved:{},lives:3,timeLeft:20*60,wrong:0,timer:null,started:false,hintCount:0};
+let G={room:1,solved:{},lives:10,timeLeft:20*60,wrong:0,timer:null,started:false,hintCount:0};
 let dialCurrent={};
 
 function applyTheme(r){
@@ -917,7 +917,7 @@ function loseLife(){
 
 function calcScore(elapsed, lives, hintCount){
   const base = Math.max(0, 1200 - elapsed);
-  const livesBonus = 1 + lives * 0.3;
+  const livesBonus = 1 + lives * 0.2;  // 10개: ×3.0, 5개: ×2.0, 0개: ×1.0
   const hintPenalty = hintCount * 50;
   return Math.max(0, Math.round(base * livesBonus - hintPenalty));
 }
@@ -981,7 +981,7 @@ function endGame(win,reason){
 
 function resetGame(){
   clearInterval(G.timer);
-  G={room:1,solved:{},lives:3,timeLeft:20*60,wrong:0,timer:null,started:false,hintCount:0};
+  G={room:1,solved:{},lives:10,timeLeft:20*60,wrong:0,timer:null,started:false,hintCount:0};
   dialCurrent={};
   if(window._multiSelected)window._multiSelected={};
   document.querySelectorAll('.heart').forEach(h=>h.className='heart');
