@@ -257,10 +257,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f0f0;font-family:
 .cert-val{color:#222;font-weight:500}
 .btn-retry{background:#fff;border:1.5px solid #e0e0e0;color:#888;padding:10px 30px;border-radius:50px;cursor:pointer;font-size:14px;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s}
 .btn-retry:hover{border-color:#2b7fe1;color:#2b7fe1}
-#toast{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);z-index:400;padding:9px 20px;border-radius:24px;font-size:13px;white-space:nowrap;opacity:0;transition:opacity 0.25s;pointer-events:none}
+#alert-popup{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:500;background:#fff;border:2px solid #e84040;border-radius:16px;padding:24px 28px;max-width:320px;width:90%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.18);display:none}
+#alert-popup.show{display:block;animation:pop-in 0.2s ease}
+.alert-icon{font-size:36px;margin-bottom:10px}
+.alert-msg{font-size:14px;color:#333;line-height:1.7;white-space:pre-line;margin-bottom:16px}
+.alert-btn{background:#e84040;border:none;color:#fff;padding:10px 28px;border-radius:50px;cursor:pointer;font-size:14px;font-family:'Noto Sans KR',sans-serif;font-weight:600}
+.alert-btn:hover{background:#c03030}
 #toast.show{opacity:1}
-#toast.toast-success{background:#1a7a50;color:#fff}
-#toast.toast-error{background:#c03030;color:#fff}
+#toast{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);z-index:400;padding:9px 20px;border-radius:24px;font-size:13px;white-space:nowrap;opacity:0;transition:opacity 0.25s;pointer-events:none}
 </style>
 </head>
 <body>
@@ -268,6 +272,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f0f0;font-family:
 <div id="room-bg"></div><div id="room-overlay"></div>
 <div class="wall-grid"></div><div class="floor-strip"></div>
 <div id="ceiling-lamp"></div><div id="light-cone"></div>
+<!-- 알림 팝업 -->
+<div id="alert-popup">
+  <div class="alert-icon">💀</div>
+  <div class="alert-msg" id="alert-msg"></div>
+  <button class="alert-btn" onclick="closeAlert()">확인</button>
+</div>
 
 <!-- ROOM 1: 사무실 -->
 <div id="r1-bookshelf" class="clickable" onclick="openPuzzle('bookshelf')">
@@ -658,7 +668,7 @@ const PZ={
     ans:'C',r:'단서 9/9 — 탈출 성공! 🎉 진정한 쏘팸이 되었습니다!'},
 };
 
-let G={room:1,solved:{},lives:10,timeLeft:20*60,wrong:0,wrongLog:[],timer:null,started:false,hintCount:0};
+let G={room:1,solved:{},lives:10,timeLeft:20*60,wrong:0,wrongLog:[],timer:null,started:false,hintCount:0,scorePenalty:0,zeroLivesAlerted:false};
 let dialCurrent={};
 
 function applyTheme(r){
@@ -974,9 +984,13 @@ function loseLife(){
     if(i<G.lives) h.className='heart';
     else h.className='heart empty';
   });
-  // 목숨 0이 돼도 게임오버 없이 계속 진행 (💀 표시만)
   if(G.lives<=0){
     hearts.forEach(h=>{h.textContent='💀';h.className='heart empty';});
+    // 처음 0이 됐을 때만 알림 표시
+    if(!G.zeroLivesAlerted){
+      G.zeroLivesAlerted=true;
+      showAlert('💀 하트 10개를 모두 소진하셨습니다.\n지금부터는 최종 점수에서 50%가 감점됩니다.');
+    }
   }
 }
 
@@ -1165,7 +1179,7 @@ function renderReview(){
 
 function resetGame(){
   clearInterval(G.timer);
-  G={room:1,solved:{},lives:10,timeLeft:20*60,wrong:0,wrongLog:[],timer:null,started:false,hintCount:0,scorePenalty:0};
+  G={room:1,solved:{},lives:10,timeLeft:20*60,wrong:0,wrongLog:[],timer:null,started:false,hintCount:0,scorePenalty:0,zeroLivesAlerted:false};
   dialCurrent={};
   if(window._multiSelected)window._multiSelected={};
   document.querySelectorAll('.heart').forEach(h=>{h.className='heart';h.textContent='♥';});
@@ -1201,6 +1215,14 @@ document.addEventListener('click',e=>{
   const p=document.getElementById('hint-popup'),b=document.getElementById('hint-btn');
   if(p&&b&&!p.contains(e.target)&&!b.contains(e.target))p.classList.remove('open');
 });
+
+function showAlert(msg){
+  document.getElementById('alert-msg').textContent=msg;
+  document.getElementById('alert-popup').classList.add('show');
+}
+function closeAlert(){
+  document.getElementById('alert-popup').classList.remove('show');
+}
 
 let _tt;
 function showToast(msg,type){
