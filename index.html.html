@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>쏘카 온보딩 프로세스 "온보딩 방탈출"</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#f0f0f0;font-family:'Noto Sans KR',sans-serif}
+#game{position:relative;width:100vw;height:100vh;overflow:hidden}
+#room-bg{position:absolute;inset:0;transition:background 0.6s}
+#room-overlay{position:absolute;inset:0;pointer-events:none}
+/* ROOM1: 밝은 사무실 */
+.theme-1 #room-bg{background:linear-gradient(180deg,#ffffff 0%,#f8f8f8 48%,#eeeeee 62%,#e2e2e2 100%)}
+.theme-1 .floor-strip{background:#d8d8d8;border-top:1.5px solid #c8c8c8}
+.theme-1 .wall-grid{opacity:1}
+/* ROOM2: 다크 회의실 */
+.theme-2 #room-bg{background:linear-gradient(180deg,#23272e 0%,#2c3038 40%,#f0f0f0 40%,#e8e8e8 66%,#d4d4d4 100%)}
+.theme-2 .floor-strip{background:#c4c4c4;border-top:2px solid #b0b0b0}
+.theme-2 .wall-grid{opacity:0}
+/* ROOM3: 밝은 라운지 - 우드/화이트/대형 창문 */
+.theme-3 #room-bg{background:linear-gradient(180deg,#f8f9fa 0%,#f0f0f0 40%,#e8ddd0 52%,#d4c8b4 70%,#c8b898 100%)}
+.theme-3 #room-overlay{background:radial-gradient(ellipse 90% 50% at 50% 0%,rgba(255,240,200,0.25) 0%,transparent 70%)}
+.theme-3 .floor-strip{background:#c0aa88;border-top:2px solid #b09878}
+.theme-3 .wall-grid{opacity:0}
+.floor-strip{position:absolute;bottom:0;left:0;right:0;height:30%}
+.wall-grid{position:absolute;top:0;left:0;right:0;height:50%;pointer-events:none;background-image:repeating-linear-gradient(90deg,rgba(0,0,0,0.025) 0,rgba(0,0,0,0.025) 1px,transparent 1px,transparent 60px),repeating-linear-gradient(0deg,rgba(0,0,0,0.025) 0,rgba(0,0,0,0.025) 1px,transparent 1px,transparent 60px)}
+#ceiling-lamp{position:absolute;top:0;left:50%;transform:translateX(-50%);width:3px;height:50px;background:linear-gradient(180deg,#bbb,#888);z-index:2}
+#ceiling-lamp::after{content:'';position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:44px;height:16px;background:rgba(255,220,120,0.45);border-radius:50%;filter:blur(5px)}
+#light-cone{position:absolute;top:50px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:300px solid transparent;border-right:300px solid transparent;border-top:520px solid rgba(255,240,200,0.06);pointer-events:none;z-index:1}
+/* 글로우 */
+@keyframes glow-blue{0%,100%{box-shadow:0 0 0 0 rgba(43,127,225,0.8)}50%{box-shadow:0 0 0 8px rgba(43,127,225,0.2),0 0 0 16px rgba(43,127,225,0.06)}}
+@keyframes bounce-up{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-6px)}}
+.next-glow{animation:glow-blue 1.5s ease-in-out infinite!important;outline:2px solid rgba(43,127,225,0.5);outline-offset:3px;border-radius:4px}
+.obj-arrow{position:absolute;top:-26px;left:50%;transform:translateX(-50%);font-size:18px;color:#2b7fe1;animation:bounce-up 1s ease-in-out infinite;pointer-events:none;display:none;z-index:20}
+.next-glow .obj-arrow{display:block}
+/* 공통 */
+.clickable{cursor:pointer;position:relative}
+.clickable:hover{filter:brightness(0.94)}
+.obj-label{position:absolute;bottom:calc(100%+10px);left:50%;transform:translateX(-50%);background:rgba(20,20,20,0.8);color:#fff;font-size:10px;padding:3px 10px;border-radius:20px;white-space:nowrap;opacity:0;transition:opacity 0.2s;pointer-events:none}
+.clickable:hover .obj-label{opacity:1}
+.interact-hint{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:8px;color:#aaa;letter-spacing:2px;white-space:nowrap;text-transform:uppercase;animation:pulse-label 2s infinite}
+@keyframes pulse-label{0%,100%{opacity:0.3}50%{opacity:0.8}}
+/* ROOM1 */
+#r1-bookshelf{position:absolute;bottom:28%;left:3%;width:148px;height:230px;background:linear-gradient(180deg,#f5f5f5,#eaeaea);border:1.5px solid #ddd;border-radius:4px 4px 0 0;box-shadow:2px 3px 14px rgba(0,0,0,0.07);z-index:8}
+.shelf{position:absolute;width:100%;height:6px;background:#e0e0e0;border-top:1px solid #ccc}
+.shelf:nth-child(1){top:52px}.shelf:nth-child(2){top:114px}.shelf:nth-child(3){top:176px}
+.book{position:absolute;bottom:0;width:13px;border-radius:1px 0 0 1px;opacity:0.85}
+#r1-whiteboard{position:absolute;top:8%;left:50%;transform:translateX(-50%);width:290px;height:155px;background:#fff;border:8px solid #e8e8e8;border-radius:3px;box-shadow:0 3px 18px rgba(0,0,0,0.09);z-index:7;overflow:hidden}
+.wb-deco-line{position:absolute;left:12px;right:12px;height:1.5px;background:rgba(80,160,220,0.18);border-radius:1px}
+#r1-desk{position:absolute;bottom:16%;left:50%;transform:translateX(-50%);width:370px;height:86px;background:linear-gradient(180deg,#f8f8f8,#eeeeee);border:1.5px solid #ddd;border-radius:6px 6px 0 0;box-shadow:0 5px 20px rgba(0,0,0,0.07);z-index:10;overflow:visible}
+#r1-desk::before{content:'';position:absolute;bottom:-48px;left:22px;right:22px;height:50px;border-left:3px solid #ddd;border-right:3px solid #ddd;border-bottom:3px solid #ddd;border-radius:0 0 4px 4px}
+#r1-desk-top{position:absolute;top:-7px;left:-8px;right:-8px;height:10px;background:#e8e8e8;border-radius:4px}
+#r1-laptop{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);width:106px;height:75px}
+#r1-laptop-screen{position:absolute;bottom:5px;left:9px;right:9px;height:68px;background:linear-gradient(135deg,#1a2a3a,#0d1f35);border:1.5px solid #bbb;border-radius:5px 5px 0 0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#4af;overflow:hidden}
+#r1-laptop-body{position:absolute;bottom:0;left:0;right:0;height:5px;background:#d0d0d0;border-radius:2px;border:1px solid #bbb}
+#r1-envelope{position:absolute;bottom:100%;right:34px;width:62px;height:42px;transition:transform 0.2s}
+#r1-envelope:hover{transform:translateY(-4px) rotate(2deg)}
+.env-body{position:absolute;inset:0;background:#fff;border:1px solid #ddd;border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,0.07)}
+.env-flap{position:absolute;top:0;left:0;right:0;height:20px;background:#f0f0f0;clip-path:polygon(0 0,50% 100%,100% 0)}
+.env-stamp{position:absolute;top:4px;right:5px;width:13px;height:13px;background:#2b7fe1;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:6px;color:#fff}
+#r1-cabinet{position:absolute;bottom:28%;left:18%;width:82px;height:124px;background:linear-gradient(180deg,#f5f5f5,#eaeaea);border:1.5px solid #ddd;border-radius:3px;box-shadow:2px 3px 14px rgba(0,0,0,0.07);z-index:9}
+.drawer{position:absolute;left:5px;right:5px;height:28px;background:#fff;border:1px solid #ddd;border-radius:2px}
+.drawer:nth-child(1){top:9px}.drawer:nth-child(2){top:45px}.drawer:nth-child(3){top:81px}
+.drawer-handle{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:22px;height:4px;background:#bbb;border-radius:2px}
+/* 책상 위 추가 아이템 */
+#r1-phone{position:absolute;bottom:100%;left:18px;width:28px;height:46px;background:linear-gradient(180deg,#333,#222);border-radius:5px;border:2px solid #444;display:flex;align-items:center;justify-content:center}
+#r1-phone::after{content:'';position:absolute;bottom:5px;width:14px;height:5px;background:#555;border-radius:10px}
+#r1-sticky{position:absolute;bottom:100%;right:80px;width:44px;height:44px;background:#fff9c4;border:1px solid #f0e04a;box-shadow:1px 2px 4px rgba(0,0,0,0.1);transform:rotate(-3deg)}
+.sticky-line{width:34px;height:1.5px;background:rgba(0,0,0,0.08);margin:6px auto 0}
+/* ROOM2 전면 재배치 */
+#r2-dark-wall{position:absolute;top:0;left:0;right:0;height:42%;background:linear-gradient(180deg,#1e2228,#262b32);z-index:2;pointer-events:none}
+#r2-glass{position:absolute;top:0;left:10%;right:10%;height:42%;background:linear-gradient(180deg,rgba(200,225,240,0.08),rgba(180,215,235,0.18));border-bottom:3px solid rgba(180,215,235,0.45);z-index:3;pointer-events:none}
+#r2-glass::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,rgba(200,225,240,0.15) 0,rgba(200,225,240,0.15) 1px,transparent 1px,transparent 80px)}
+.r2-pillar{position:absolute;top:0;width:22px;height:42%;z-index:4}
+#r2-pl{left:10%;background:linear-gradient(90deg,#181c22,#22272e)}
+#r2-pr{right:10%;background:linear-gradient(90deg,#22272e,#181c22)}
+/* TV - 화면 크고 중앙 상단 */
+#r2-tv{position:absolute;top:1%;left:50%;transform:translateX(-50%);width:360px;height:200px;background:#050505;border:8px solid #111;border-radius:6px;box-shadow:0 6px 32px rgba(0,0,0,0.7),0 0 0 1px #333;z-index:5}
+#r2-tv-screen{position:absolute;inset:0;background:linear-gradient(160deg,#0a0e14,#060a10);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px}
+#r2-tv-stand{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);width:60px;height:18px;background:linear-gradient(180deg,#222,#111);border-radius:0 0 6px 6px}
+#r2-tv-stand::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100px;height:6px;background:#111;border-radius:3px}
+#r2-tv-click{position:absolute;top:1%;left:50%;transform:translateX(-50%);width:360px;height:200px;z-index:6;cursor:pointer}
+/* 화이트보드 - 왼쪽 벽에 세로로 */
+#r2-whiteboard2{position:absolute;top:12%;left:1%;width:60px;height:140px;background:#fafafa;border:5px solid #d8d8d8;border-radius:3px;box-shadow:2px 0 12px rgba(0,0,0,0.1);z-index:5}
+#r2-whiteboard2::before{content:'WHITEBOARD';position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:6px;color:#aaa;letter-spacing:1px;white-space:nowrap}
+.wb2-line{position:absolute;left:5px;right:5px;height:1.5px;background:rgba(43,127,225,0.3)}
+/* 회의 테이블 - 더 넓고 중앙 */
+#r2-table{position:absolute;bottom:14%;left:50%;transform:translateX(-50%);width:500px;height:80px;background:linear-gradient(180deg,#ffffff,#f8f8f8);border:1.5px solid #e0e0e0;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.12);z-index:10}
+#r2-table::before{content:'';position:absolute;bottom:-50px;left:32px;right:32px;height:52px;border-left:3px solid #ccc;border-right:3px solid #ccc;border-bottom:3px solid #ccc;border-radius:0 0 8px 8px}
+#r2-table-top{position:absolute;top:-9px;left:-12px;right:-12px;height:12px;background:#ebebeb;border-radius:7px;box-shadow:0 2px 6px rgba(0,0,0,0.06)}
+/* 의자 - 테이블 앞뒤 배치 */
+.r2-chair{position:absolute;width:50px;height:52px;background:linear-gradient(180deg,#2a2a2a,#1a1a1a);border-radius:7px 7px 3px 3px;box-shadow:0 4px 12px rgba(0,0,0,0.35);z-index:9}
+.r2-chair::before{content:'';position:absolute;top:-14px;left:4px;right:4px;height:16px;background:linear-gradient(180deg,#333,#222);border-radius:4px;border:1px solid #444}
+.r2-chair::after{content:'';position:absolute;bottom:-14px;left:8px;right:8px;height:15px;background:linear-gradient(90deg,#1a1a1a 0%,transparent 25%,transparent 75%,#1a1a1a 100%);border-bottom:3px solid #111;border-radius:0 0 3px 3px}
+#r2-ch1{bottom:28%;left:10%}#r2-ch2{bottom:28%;left:24%}
+#r2-ch3{bottom:28%;right:24%}#r2-ch4{bottom:28%;right:10%}
+/* 테이블 위 아이템 위치 재설정 */
+#r2-notepad{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);width:58px;height:74px}
+.notepad-top{width:58px;height:8px;background:#2b7fe1;border-radius:3px 3px 0 0}
+.notepad-body{width:58px;height:66px;background:#fff;border:1px solid #ddd;border-radius:0 0 3px 3px;box-shadow:1px 2px 6px rgba(0,0,0,0.08)}
+.notepad-line{width:46px;height:1.5px;background:#eee;border-radius:1px;margin:7px auto 0}
+#r2-pen{position:absolute;bottom:100%;right:48px;width:10px;height:70px;background:linear-gradient(180deg,#cc2222,#aa1111);border-radius:3px 3px 1px 1px}
+#r2-pen::after{content:'';position:absolute;bottom:0;left:1px;right:1px;height:8px;background:#888;border-radius:0 0 3px 3px}
+#r2-laptop2{position:absolute;bottom:100%;left:32px;width:92px;height:66px}
+#r2-ls{position:absolute;bottom:4px;left:7px;right:7px;height:59px;background:linear-gradient(135deg,#1a2a3a,#0d1f35);border:1.5px solid #bbb;border-radius:5px 5px 0 0;display:flex;align-items:center;justify-content:center;font-size:7px;color:#4af}
+#r2-lb{position:absolute;bottom:0;left:0;right:0;height:4px;background:#d0d0d0;border:1px solid #bbb;border-radius:2px}
+#r2-remote{position:absolute;bottom:100%;right:14px;width:24px;height:60px;background:linear-gradient(180deg,#444,#222);border-radius:5px;border:1px solid #555;box-shadow:1px 2px 6px rgba(0,0,0,0.2)}
+#r2-remote::before{content:'';position:absolute;top:8px;left:4px;right:4px;height:6px;background:#555;border-radius:2px}
+#r2-remote::after{content:'';position:absolute;top:20px;left:4px;right:4px;height:4px;background:#555;border-radius:2px}
+/* ROOM3: 라운지 */
+/* 통유리 창문 */
+#r3-window{position:absolute;top:0;left:0;right:0;height:46%;background:linear-gradient(180deg,#c8dff0 0%,#d8ecf8 30%,#e8f4fc 60%,rgba(240,248,255,0.5) 100%);z-index:2;pointer-events:none}
+#r3-window::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,rgba(100,150,200,0.15) 0,rgba(100,150,200,0.15) 2px,transparent 2px,transparent 80px);border-bottom:3px solid rgba(100,150,200,0.3)}
+/* 우드 바닥 */
+#r3-floor{position:absolute;bottom:0;left:0;right:0;height:36%;background:linear-gradient(180deg,#c8aa80 0%,#b89870 40%,#a88860 100%);z-index:2;pointer-events:none}
+#r3-floor::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(0,0,0,0.04) 0,rgba(0,0,0,0.04) 1px,transparent 1px,transparent 20px),repeating-linear-gradient(90deg,rgba(0,0,0,0.02) 0,rgba(0,0,0,0.02) 1px,transparent 1px,transparent 120px)}
+/* 흰 벽 */
+#r3-wall{position:absolute;top:0;left:0;right:0;height:46%;background:#f8f8f6;z-index:1;pointer-events:none}
+/* 파란 소파 */
+#r3-sofa-l{position:absolute;bottom:34%;left:3%;width:160px;height:68px;background:linear-gradient(180deg,#3a5a8a,#2a4a7a);border-radius:8px 8px 3px 3px;box-shadow:0 5px 18px rgba(0,0,0,0.2);z-index:10}
+#r3-sofa-l::before{content:'';position:absolute;inset:5px 8px;border-top:2px solid rgba(255,255,255,0.15);border-radius:5px 5px 0 0}
+#r3-sofa-l-arm{position:absolute;top:5px;bottom:0;left:0;width:12px;background:#2a4a7a;border-radius:8px 0 0 3px;border-right:1px solid rgba(255,255,255,0.08)}
+#r3-sofa-r{position:absolute;bottom:34%;right:2%;width:170px;height:68px;background:linear-gradient(180deg,#3a5a8a,#2a4a7a);border-radius:8px 8px 3px 3px;box-shadow:0 5px 18px rgba(0,0,0,0.2);z-index:10}
+#r3-sofa-r::before{content:'';position:absolute;inset:5px 8px;border-top:2px solid rgba(255,255,255,0.15);border-radius:5px 5px 0 0}
+/* 쿠션 */
+.cushion{position:absolute;top:8px;width:28px;height:24px;border-radius:4px}
+/* 커피 테이블 */
+#r3-coffee-tbl{position:absolute;bottom:31%;right:20%;width:110px;height:32px;background:linear-gradient(180deg,#f0ece0,#e8e0cc);border:1.5px solid #d4cbb8;border-radius:4px;box-shadow:0 3px 12px rgba(0,0,0,0.1);z-index:11}
+#r3-coffee-tbl::before{content:'';position:absolute;bottom:-14px;left:18px;right:18px;height:16px;border-left:2px solid #c0b8a0;border-right:2px solid #c0b8a0;border-bottom:2px solid #c0b8a0;border-radius:0 0 4px 4px}
+/* 우드 책장 */
+#r3-shelf2{position:absolute;bottom:34%;left:24%;width:100px;height:150px;background:linear-gradient(180deg,#d4b888,#c4a878);border:1.5px solid #b89860;border-radius:4px 4px 0 0;box-shadow:2px 3px 12px rgba(0,0,0,0.12);z-index:8}
+.r3-shelf-board{position:absolute;width:100%;height:5px;background:#b89860;border-radius:1px}
+.r3-shelf-board:nth-child(1){top:38px}.r3-shelf-board:nth-child(2){top:85px}.r3-shelf-board:nth-child(3){top:132px}
+.r3-book{position:absolute;bottom:0;width:11px;border-radius:1px 0 0 1px;opacity:0.9}
+/* 화분 */
+#r3-plant{position:absolute;bottom:34%;left:62%;z-index:12}
+#r3-plant-leaves{width:44px;height:50px;background:radial-gradient(ellipse,#5a9a4a 30%,#3a7a2a 80%);border-radius:50% 50% 20% 20%;box-shadow:inset -4px -4px 8px rgba(0,0,0,0.2)}
+#r3-plant-pot{width:36px;height:28px;background:linear-gradient(180deg,#c06830,#a05820);border-radius:0 0 8px 8px;margin:0 auto;border:1.5px solid #904818}
+/* 조명 펜던트 */
+.r3-pendant{position:absolute;top:0;width:2px;background:#888;z-index:6;pointer-events:none}
+.r3-pendant::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:20px;height:20px;background:radial-gradient(#fff 30%,#f0e080 70%,transparent 100%);border-radius:50%;box-shadow:0 0 20px rgba(255,240,100,0.4)}
+/* 벤치/스툴 */
+#r3-stool{position:absolute;bottom:32%;right:30%;width:36px;height:22px;background:linear-gradient(180deg,#e8c030,#d0a820);border-radius:50%;box-shadow:0 3px 8px rgba(0,0,0,0.15);z-index:12}
+/* 탕비 카운터 */
+#r3-pantry{position:absolute;bottom:46%;right:3%;width:90px;height:56px;background:linear-gradient(180deg,#e8ddd0,#d8cfc0);border:1.5px solid #c8c0b0;border-radius:4px 4px 0 0;z-index:5}
+#r3-pantry-top{position:absolute;top:-6px;left:-4px;right:-4px;height:8px;background:#d8cfc0;border-radius:3px}
+#r3-cm2{position:absolute;bottom:100%;left:8px;width:34px;height:44px;background:linear-gradient(180deg,#282828,#181818);border:1.5px solid #333;border-radius:4px 4px 2px 2px}
+#r3-cm2-scr{position:absolute;top:5px;left:4px;right:4px;height:10px;background:#002818;border-radius:2px;font-size:5px;color:#0f8;display:flex;align-items:center;justify-content:center;letter-spacing:0.5px}
+/* HUD */
+#hud{position:absolute;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:9px 18px;background:rgba(255,255,255,0.9);backdrop-filter:blur(8px);border-bottom:1px solid rgba(0,0,0,0.07);box-shadow:0 1px 6px rgba(0,0,0,0.04)}
+#room-indicator{font-family:'DM Sans',sans-serif;font-size:11px;color:#999;letter-spacing:2px;text-transform:uppercase}
+#timer-box{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;color:#222;letter-spacing:3px}
+#timer-box.warn{color:#e8a020}
+#timer-box.danger{color:#e84040;animation:flicker 0.5s infinite}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:0.4}}
+#lives-box{display:flex;gap:5px}
+.heart{font-size:15px}.heart.empty{opacity:0.18}
+#hint-btn{position:absolute;top:52px;right:14px;z-index:101;background:#fff;border:1.5px solid #e0e0e0;border-radius:20px;padding:6px 14px;font-size:12px;color:#888;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 2px 8px rgba(0,0,0,0.06);transition:all 0.2s;font-family:'Noto Sans KR',sans-serif}
+#hint-btn:hover{border-color:#f0c060;color:#c08000}
+#hint-popup{position:absolute;top:90px;right:14px;z-index:102;background:#fff;border:1.5px solid #f0c060;border-radius:10px;padding:14px 16px;max-width:250px;box-shadow:0 4px 20px rgba(0,0,0,0.12);display:none}
+#hint-popup.open{display:block;animation:pop-in 0.15s ease}
+@keyframes pop-in{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+.hp-title{font-size:12px;font-weight:700;color:#c08000;margin-bottom:6px}
+.hp-msg{font-size:13px;color:#555;line-height:1.65}
+.hp-close{position:absolute;top:8px;right:10px;font-size:13px;color:#ccc;cursor:pointer;border:none;background:none;padding:2px}
+#room-banner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;text-align:center;pointer-events:none;opacity:0;transition:opacity 0.4s}
+#room-banner.show{opacity:1}
+.banner-num{font-family:'DM Sans',sans-serif;font-size:11px;letter-spacing:4px;color:#2b7fe1;text-transform:uppercase;margin-bottom:6px}
+.banner-name{font-size:22px;font-weight:700;color:#222;background:rgba(255,255,255,0.94);padding:10px 22px;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+#progress-bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:rgba(0,0,0,0.06);z-index:100}
+#progress-fill{height:100%;background:linear-gradient(90deg,#2b7fe1,#34c9a0);transition:width 0.5s}
+/* 주관식 입력 */
+.short-input-wrap{margin-top:4px}
+.short-input{width:100%;padding:14px 16px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:16px;font-family:'Noto Sans KR',sans-serif;color:#222;background:#f8f8f8;outline:none;transition:all 0.18s}
+.short-input:focus{border-color:#2b7fe1;background:#fff;box-shadow:0 0 0 3px rgba(43,127,225,0.08)}
+.short-input.correct-input{border-color:#34c9a0;background:#edfaf3;color:#1a8060}
+.short-input.wrong-input{border-color:#e84040;background:#fff0f0;animation:shake 0.3s}
+.short-submit{width:100%;padding:13px;margin-top:10px;background:#2b7fe1;border:none;color:#fff;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;font-family:'Noto Sans KR',sans-serif;transition:background 0.2s}
+.short-submit:hover{background:#1a6fd0}
+.short-submit:disabled{background:#ccc;cursor:default}
+/* 주관식 */
+#overlay{position:absolute;inset:0;z-index:150;background:rgba(0,0,0,0.38);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center}
+#overlay.open{display:flex}
+#puzzle-panel{background:#fff;border-radius:16px;width:min(490px,92vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.18)}
+.panel-header{padding:18px 20px 14px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;border-radius:16px 16px 0 0;z-index:1}
+.panel-title{font-size:16px;font-weight:700;color:#222}
+.panel-close{width:28px;height:28px;border-radius:50%;background:#f5f5f5;border:none;color:#888;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.panel-close:hover{background:#fee;color:#e44}
+.panel-body{padding:20px}
+.q-text{font-size:15px;font-weight:500;color:#222;line-height:1.6;margin-bottom:16px}
+.choices{display:flex;flex-direction:column;gap:8px}
+.choice-btn{background:#f8f8f8;border:1.5px solid #e8e8e8;color:#444;padding:12px 16px;border-radius:10px;cursor:pointer;text-align:left;font-size:14px;font-family:'Noto Sans KR',sans-serif;transition:all 0.18s;display:flex;align-items:center;gap:12px}
+.choice-btn:hover:not(:disabled){background:#f0f6ff;border-color:#2b7fe1;color:#2b7fe1}
+.choice-btn.correct{background:#edfaf3;border-color:#34c9a0;color:#1a8060;pointer-events:none}
+.choice-btn.wrong{background:#fff0f0;border-color:#e84040;color:#c03030;animation:shake 0.3s}
+.choice-btn.faded{background:#f8f8f8;border-color:#e8e8e8;color:#ccc;pointer-events:none}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.choice-key{width:26px;height:26px;border-radius:6px;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.success-flash{background:#edfaf3;border:1.5px solid #34c9a0;border-radius:10px;padding:13px;text-align:center;color:#1a8060;font-size:14px;font-weight:500;margin-top:12px;display:none}
+.success-flash.show{display:block;animation:fadeUp 0.35s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.locked-msg{text-align:center;padding:2.5rem 0}
+.lock-emoji{font-size:38px;margin-bottom:10px}
+.lock-text{color:#aaa;font-size:14px}
+.dial-puzzle{text-align:center;padding:6px 0}
+.dial-display{font-family:'DM Sans',sans-serif;font-size:40px;font-weight:700;letter-spacing:16px;color:#2b7fe1;background:#f0f6ff;border:2px solid #dbeaff;border-radius:10px;padding:14px 20px;margin:0 auto 14px;display:inline-block;min-width:170px}
+.dial-hint{font-size:12px;color:#bbb;margin-bottom:12px}
+.dial-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto}
+.dial-btn{background:#f8f8f8;border:1.5px solid #e8e8e8;color:#555;font-size:18px;font-weight:700;padding:11px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.14s}
+.dial-btn:hover{background:#f0f6ff;border-color:#2b7fe1;color:#2b7fe1}
+.dial-submit{width:100%;padding:11px;margin-top:8px;background:#2b7fe1;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;font-family:'Noto Sans KR',sans-serif}
+.dial-submit:hover{background:#1a6fd0}
+/* 인트로 */
+#intro-screen{position:absolute;inset:0;z-index:300;background:linear-gradient(135deg,#f8feff 0%,#eef8f5 50%,#e8f4ff 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:2rem}
+.intro-logo{font-size:11px;letter-spacing:4px;color:#2b7fe1;margin-bottom:1.8rem;font-family:'DM Sans',sans-serif;text-transform:uppercase}
+.intro-title{font-size:clamp(26px,4.5vw,48px);font-weight:700;color:#111;margin-bottom:4px}
+.intro-subtitle{font-size:clamp(16px,2.8vw,26px);font-weight:500;color:#2b7fe1;margin-bottom:1.4rem}
+.intro-desc{font-size:14px;color:#777;line-height:1.8;max-width:400px;margin:0 auto 2.2rem}
+.intro-meta{display:flex;gap:1.5rem;justify-content:center;margin-bottom:2.2rem;flex-wrap:wrap}
+.meta-item{text-align:center;background:#fff;border:1px solid #eee;border-radius:12px;padding:10px 22px;box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.meta-val{font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700;color:#2b7fe1}
+.meta-label{font-size:10px;color:#aaa;letter-spacing:1px;margin-top:2px;text-transform:uppercase}
+.btn-enter{background:#2b7fe1;border:none;color:#fff;font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:700;padding:13px 44px;border-radius:50px;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 18px rgba(43,127,225,0.3)}
+.btn-enter:hover{background:#1a6fd0;transform:translateY(-2px)}
+#room-transition{position:absolute;inset:0;z-index:250;background:#fff;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+#room-transition.show{display:flex}
+.trans-dots{display:flex;gap:8px}
+.trans-dot{width:8px;height:8px;border-radius:50%;background:#2b7fe1;animation:dot-b 1.2s infinite}
+.trans-dot:nth-child(2){animation-delay:0.2s}.trans-dot:nth-child(3){animation-delay:0.4s}
+@keyframes dot-b{0%,80%,100%{transform:translateY(0);opacity:0.4}40%{transform:translateY(-10px);opacity:1}}
+.trans-label{font-size:13px;color:#aaa;letter-spacing:2px}
+#end-screen{position:absolute;inset:0;z-index:300;background:linear-gradient(135deg,#f8feff,#eef8f5);display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:2rem}
+#end-screen.show{display:flex;animation:fadeUp 0.5s}
+.end-icon{font-size:60px;margin-bottom:1.4rem}
+.end-title{font-size:34px;font-weight:700;margin-bottom:0.6rem}
+.end-title.win{color:#2b7fe1}.end-title.lose{color:#e84040}
+.end-sub{color:#888;font-size:14px;line-height:1.7;max-width:360px;margin:0 auto 1.8rem}
+.cert{background:#fff;border:1.5px solid #e8e8e8;border-radius:12px;padding:1.4rem 1.8rem;max-width:360px;width:100%;margin:0 auto 1.8rem;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,0.05)}
+.cert-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px}
+.cert-label{color:#bbb;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-family:'DM Sans',sans-serif}
+.cert-val{color:#222;font-weight:500}
+.btn-retry{background:#fff;border:1.5px solid #e0e0e0;color:#888;padding:10px 30px;border-radius:50px;cursor:pointer;font-size:14px;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s}
+.btn-retry:hover{border-color:#2b7fe1;color:#2b7fe1}
+#toast{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);z-index:400;padding:9px 20px;border-radius:24px;font-size:13px;white-space:nowrap;opacity:0;transition:opacity 0.25s;pointer-events:none}
+#toast.show{opacity:1}
+#toast.toast-success{background:#1a7a50;color:#fff}
+#toast.toast-error{background:#c03030;color:#fff}
+</style>
+</head>
+<body>
+<div id="game" class="theme-1">
+<div id="room-bg"></div><div id="room-overlay"></div>
+<div class="wall-grid"></div><div class="floor-strip"></div>
+<div id="ceiling-lamp"></div><div id="light-cone"></div>
+
+<!-- ROOM 1: 사무실 -->
+<div id="r1-bookshelf" class="clickable" onclick="openPuzzle('bookshelf')">
+  <div class="shelf"></div><div class="shelf"></div><div class="shelf"></div>
+  <div class="book" style="left:7px;height:48px;background:#e8c4b8;bottom:63px"></div>
+  <div class="book" style="left:22px;height:42px;background:#b8d4e8;bottom:63px"></div>
+  <div class="book" style="left:37px;height:52px;background:#c8e8c8;bottom:63px"></div>
+  <div class="book" style="left:52px;height:40px;background:#e8e4b8;bottom:63px"></div>
+  <div class="book" style="left:67px;height:46px;background:#d8c4e8;bottom:63px"></div>
+  <div class="book" style="left:82px;height:44px;background:#e8d4c8;bottom:63px"></div>
+  <div class="book" style="left:97px;height:50px;background:#c8dce8;bottom:63px"></div>
+  <div class="book" style="left:112px;height:38px;background:#e8c8d8;bottom:63px"></div>
+  <div class="book" style="left:7px;height:42px;background:#d4e8d4;bottom:125px"></div>
+  <div class="book" style="left:22px;height:48px;background:#e8d8b8;bottom:125px"></div>
+  <div class="book" style="left:37px;height:40px;background:#b8c8e8;bottom:125px"></div>
+  <div class="obj-arrow">▼</div><div class="interact-hint">EXAMINE</div>
+</div>
+<div id="r1-whiteboard" class="clickable" onclick="openPuzzle('whiteboard')">
+  <div class="wb-deco-line" style="top:28px"></div><div class="wb-deco-line" style="top:58px"></div>
+  <div class="wb-deco-line" style="top:88px"></div><div class="wb-deco-line" style="top:118px"></div>
+  <div style="position:absolute;top:8px;left:12px;font-size:8px;color:#bbb;letter-spacing:1px;font-family:'DM Sans',sans-serif">SOCAR BOARD</div>
+  <div class="obj-arrow" style="color:#2b7fe1">▼</div><div class="interact-hint">READ</div>
+</div>
+<div id="r1-cabinet" class="clickable" onclick="openPuzzle('cabinet')">
+  <div class="drawer"><div class="drawer-handle"></div></div>
+  <div class="drawer"><div class="drawer-handle"></div></div>
+  <div class="drawer"><div class="drawer-handle"></div></div>
+  <div class="obj-arrow">▼</div><div class="interact-hint">SEARCH</div>
+</div>
+<div id="r1-desk">
+  <div id="r1-desk-top"></div>
+  <div id="r1-laptop" class="clickable" onclick="openPuzzle('laptop')">
+    <div id="r1-laptop-screen"><span style="position:relative;z-index:1;font-size:7px">⬛ SOCAR WIKI</span></div>
+    <div id="r1-laptop-body"></div>
+    <div class="obj-arrow" style="color:#4af">▼</div><div class="interact-hint" style="color:#4af">ACCESS</div>
+  </div>
+  <div id="r1-envelope" class="clickable" onclick="openPuzzle('envelope')">
+    <div class="env-body"><div class="env-flap"></div><div class="env-stamp">S</div></div>
+    <div class="obj-arrow" style="color:#555">▼</div><div class="interact-hint">READ</div>
+  </div>
+  <div id="r1-phone" class="clickable" onclick="openPuzzle('phone')">
+    <div class="obj-arrow">▼</div><div class="interact-hint">CHECK</div>
+  </div>
+  <div id="r1-sticky" class="clickable" onclick="openPuzzle('sticky')">
+    <div class="sticky-line"></div><div class="sticky-line"></div><div class="sticky-line"></div>
+    <div class="obj-arrow">▼</div><div class="interact-hint">READ</div>
+  </div>
+  <div id="r1-badge" class="clickable" onclick="openPuzzle('badge')" style="position:absolute;bottom:100%;left:140px;width:34px;height:48px;background:linear-gradient(180deg,#2b7fe1,#1a6fd0);border-radius:4px 4px 8px 8px;box-shadow:1px 2px 6px rgba(0,0,0,0.15);z-index:11;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px">
+    <div style="width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.3)"></div>
+    <div style="width:24px;height:2px;background:rgba(255,255,255,0.4);border-radius:1px"></div>
+    <div style="width:18px;height:2px;background:rgba(255,255,255,0.3);border-radius:1px"></div>
+    <div class="obj-arrow">▼</div><div class="interact-hint" style="color:#adf">CHECK</div>
+  </div>
+</div>
+
+<!-- ROOM 2: 회의실 -->
+<div id="r2-dark-wall"></div>
+<div id="r2-glass"></div>
+<div class="r2-pillar" id="r2-pl"></div><div class="r2-pillar" id="r2-pr"></div>
+<div id="r2-tv"><div id="r2-tv-screen">
+  <div style="font-size:11px;color:#333;letter-spacing:2px;font-family:'DM Sans',sans-serif">SOCAR</div>
+  <div style="font-size:7px;color:#222;letter-spacing:1px">MEETING ROOM</div>
+</div><div id="r2-tv-stand"></div></div>
+<div id="r2-tv-click" class="clickable" onclick="openPuzzle('tv')">
+  <div class="obj-arrow" style="color:#4af">▼</div><div class="interact-hint" style="color:#4af">VIEW</div>
+</div>
+<div id="r2-whiteboard2" class="clickable" onclick="openPuzzle('wb2')">
+  <div class="wb2-line" style="top:16px"></div><div class="wb2-line" style="top:32px"></div>
+  <div class="wb2-line" style="top:48px"></div><div class="wb2-line" style="top:64px"></div>
+  <div class="obj-arrow">▼</div><div class="interact-hint">READ</div>
+</div>
+<div class="r2-chair" id="r2-ch1"></div><div class="r2-chair" id="r2-ch2"></div>
+<div class="r2-chair" id="r2-ch3"></div><div class="r2-chair" id="r2-ch4"></div>
+<div id="r2-table">
+  <div id="r2-table-top"></div>
+  <div id="r2-notepad" class="clickable" onclick="openPuzzle('notepad')">
+    <div class="notepad-top"></div>
+    <div class="notepad-body"><div class="notepad-line"></div><div class="notepad-line"></div><div class="notepad-line"></div></div>
+    <div class="obj-arrow">▼</div><div class="interact-hint">READ</div>
+  </div>
+  <div id="r2-pen" class="clickable" onclick="openPuzzle('pen')">
+    <div class="obj-arrow" style="color:#e84040">▼</div><div class="interact-hint" style="color:#e84040">PICK UP</div>
+  </div>
+  <div id="r2-laptop2" class="clickable" onclick="openPuzzle('r2laptop')">
+    <div id="r2-ls"><span style="font-size:6px;position:relative;z-index:1;color:#4af">● JIRA</span></div>
+    <div id="r2-lb"></div>
+    <div class="obj-arrow" style="color:#4af">▼</div><div class="interact-hint" style="color:#4af">ACCESS</div>
+  </div>
+  <div id="r2-remote" class="clickable" onclick="openPuzzle('remote')">
+    <div class="obj-arrow">▼</div><div class="interact-hint">USE</div>
+  </div>
+  <!-- badge1, badge2: 독립 아이템 -->
+  <div id="r2-badge1" class="clickable" onclick="openPuzzle('r2badge1')" style="position:absolute;bottom:100%;left:180px;width:48px;height:34px;background:linear-gradient(180deg,#e8f0f8,#d8e4f0);border:1px solid #c0d0e4;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px">
+    <div style="width:36px;height:2px;background:#aabbd0;border-radius:1px"></div>
+    <div style="width:28px;height:2px;background:#aabbd0;border-radius:1px"></div>
+    <div style="width:22px;height:2px;background:#aabbd0;border-radius:1px"></div>
+    <div class="obj-arrow">▼</div><div class="interact-hint">VIEW</div>
+  </div>
+  <div id="r2-badge2" class="clickable" onclick="openPuzzle('r2badge2')" style="position:absolute;bottom:100%;right:170px;width:48px;height:34px;background:linear-gradient(180deg,#f0f0f0,#e4e4e4);border:1px solid #d0d0d0;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.07);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px">
+    <div style="width:10px;height:10px;border-radius:50%;background:#e8a020;margin-bottom:2px"></div>
+    <div style="width:36px;height:1.5px;background:#ccc;border-radius:1px"></div>
+    <div class="obj-arrow">▼</div><div class="interact-hint">CHECK</div>
+  </div>
+</div>
+
+<!-- ROOM 3: 라운지 -->
+<div id="r3-wall"></div>
+<div id="r3-window"></div>
+<div id="r3-floor"></div>
+<div class="r3-pendant" style="left:25%;height:60px"></div>
+<div class="r3-pendant" style="left:50%;height:50px"></div>
+<div class="r3-pendant" style="left:75%;height:65px"></div>
+<div id="r3-shelf2" class="clickable" onclick="openPuzzle('shelf2')">
+  <div class="r3-shelf-board"></div><div class="r3-shelf-board"></div><div class="r3-shelf-board"></div>
+  <div class="r3-book" style="left:6px;height:34px;background:#e8a080;bottom:47px"></div>
+  <div class="r3-book" style="left:20px;height:28px;background:#80a8e8;bottom:47px"></div>
+  <div class="r3-book" style="left:34px;height:36px;background:#80c880;bottom:47px"></div>
+  <div class="r3-book" style="left:48px;height:30px;background:#e8d880;bottom:47px"></div>
+  <div class="r3-book" style="left:62px;height:32px;background:#c880e8;bottom:47px"></div>
+  <div class="r3-book" style="left:76px;height:34px;background:#80e8e0;bottom:47px"></div>
+  <div class="obj-arrow">▼</div><div class="interact-hint">BROWSE</div>
+</div>
+<div id="r3-sofa-l">
+  <div id="r3-sofa-l-arm"></div>
+  <div class="cushion" style="right:20px;background:#e84040;border-radius:4px"></div>
+</div>
+<div id="r3-sofa-r" class="clickable" onclick="openPuzzle('sofa')">
+  <div class="cushion" style="right:60px;background:#c8a020;border-radius:4px"></div>
+  <div class="cushion" style="right:20px;background:#208060;border-radius:4px"></div>
+  <div class="obj-arrow">▼</div><div class="interact-hint">SIT</div>
+</div>
+<div id="r3-coffee-tbl" class="clickable" onclick="openPuzzle('coffeetable')">
+  <div class="obj-arrow">▼</div><div class="interact-hint">INSPECT</div>
+</div>
+<div id="r3-plant" class="clickable" onclick="openPuzzle('plant')">
+  <div id="r3-plant-leaves"></div>
+  <div id="r3-plant-pot"></div>
+  <div class="obj-arrow" style="color:#3a7a2a">▼</div><div class="interact-hint" style="color:#3a7a2a">LOOK</div>
+</div>
+<div id="r3-stool" class="clickable" onclick="openPuzzle('stool')">
+  <div class="obj-arrow" style="color:#886600">▼</div><div class="interact-hint">CHECK</div>
+</div>
+<!-- 슬랙 PC 화면 -->
+<div id="r3-slack-pc" class="clickable" onclick="openPuzzle('window')" style="position:absolute;bottom:34%;left:35%;width:180px;height:120px;z-index:12">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,#1a1a2e,#16213e);border:3px solid #2a2a4a;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
+    <div style="position:absolute;top:0;left:0;right:0;height:22px;background:#3f0e40;border-radius:5px 5px 0 0;display:flex;align-items:center;padding:0 8px;gap:4px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#ff5f57"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:#ffbd2e"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:#28ca41"></div>
+      <div style="margin-left:auto;font-size:7px;color:#cba;letter-spacing:1px;font-family:'DM Sans',sans-serif">Slack</div>
+    </div>
+    <div style="position:absolute;top:22px;left:0;bottom:0;width:52px;background:#3f0e40;border-radius:0 0 0 5px;padding:6px 4px">
+      <div style="font-size:6px;color:#cba;margin-bottom:4px;letter-spacing:0.5px">SOCAR</div>
+      <div style="font-size:5px;color:#9c6fa0;margin-bottom:2px"># all_notice</div>
+      <div style="font-size:5px;color:#fff;margin-bottom:2px;background:rgba(255,255,255,0.1);padding:1px 2px;border-radius:2px"># all_free_talk</div>
+      <div style="font-size:5px;color:#9c6fa0;margin-bottom:2px"># all_sofam</div>
+      <div style="font-size:5px;color:#9c6fa0;margin-bottom:2px"># ask_인사/IT</div>
+      <div style="font-size:5px;color:#9c6fa0"># all_ai_first</div>
+    </div>
+    <div style="position:absolute;top:22px;left:52px;right:0;bottom:0;background:#1a1a2e;border-radius:0 0 5px 0;padding:6px">
+      <div style="font-size:6px;color:#7c8;font-weight:700;margin-bottom:4px"># all_free_talk</div>
+      <div style="font-size:5px;color:#8888aa;line-height:1.4">쏘카리안들의 자유로운 소통 채널 🎉</div>
+      <div style="margin-top:4px;font-size:5px;color:#aaa">오늘 점심 뭐 드셨어요? 😄</div>
+    </div>
+  </div>
+  <div style="position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);width:40px;height:12px;background:#333;border-radius:0 0 4px 4px"></div>
+  <div style="position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);width:70px;height:5px;background:#2a2a2a;border-radius:3px"></div>
+  <div class="obj-arrow" style="color:#7c8">▼</div><div class="interact-hint" style="color:#7c8">EXPLORE</div>
+</div>
+<!-- 정보보안 게시판 -->
+<div id="r3-privacy-board" class="clickable" onclick="openPuzzle('privacy')" style="position:absolute;top:10%;right:3%;width:100px;height:130px;background:#fff;border:4px solid #e0e0e0;border-radius:3px;box-shadow:0 2px 12px rgba(0,0,0,0.1);z-index:8;overflow:hidden">
+  <div style="width:100%;height:18px;background:#e84040;display:flex;align-items:center;justify-content:center">
+    <span style="font-size:7px;color:#fff;font-weight:700;letter-spacing:0.5px">🔒 정보보안</span>
+  </div>
+  <div style="padding:6px 5px;font-size:5px;color:#333;line-height:1.5">
+    <div style="font-weight:700;margin-bottom:2px;color:#e84040">제1회 천하제일</div>
+    <div style="font-weight:700;color:#e84040;margin-bottom:4px">프라이버시대회</div>
+    <div style="color:#555">📅 3월 개최</div>
+    <div style="margin-top:3px;color:#555">대상 시스템 →</div>
+  </div>
+  <div class="obj-arrow" style="color:#e84040">▼</div><div class="interact-hint" style="color:#e84040">READ</div>
+</div>
+<div id="r3-pantry">
+  <div id="r3-pantry-top"></div>
+</div>
+<div id="r3-pantry-click" class="clickable" onclick="openPuzzle('pantry')" style="position:absolute;bottom:46%;right:3%;width:90px;height:56px;z-index:6;cursor:pointer">
+  <div class="obj-arrow">▼</div><div class="interact-hint">EXAMINE</div>
+</div>
+<div id="r3-cm2" class="clickable" onclick="openPuzzle('cm2')" style="position:absolute;bottom:calc(46% + 56px);right:calc(3% + 10px);z-index:13">
+  <div id="r3-cm2-scr">SOCAR</div>
+  <div class="obj-arrow" style="color:#0f8">▼</div><div class="interact-hint" style="color:#0a6">USE</div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="room-indicator">ROOM 01 / 03</div>
+  <div id="timer-box">20:00</div>
+  <div id="lives-box"><span class="heart">♥</span><span class="heart">♥</span><span class="heart">♥</span></div>
+</div>
+<button id="hint-btn" onclick="toggleHint()">💡 힌트</button>
+<div id="hint-popup">
+  <button class="hp-close" onclick="toggleHint()">✕</button>
+  <div class="hp-title">💡 힌트 안내</div>
+  <div class="hp-msg">힌트 사용 시 소요시간 10초가 추가됩니다.<br><b>다포디에게 요청해주세요</b> 😊</div>
+</div>
+<div id="room-banner"><div class="banner-num" id="banner-num">ROOM 01</div><div class="banner-name" id="banner-name">쏘카 히스토리 & 핵심가치</div></div>
+<div id="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
+<div id="overlay" onclick="handleOverlayClick(event)">
+  <div id="puzzle-panel">
+    <div class="panel-header"><div class="panel-title" id="panel-title">—</div><button class="panel-close" onclick="closePanel()">✕</button></div>
+    <div class="panel-body" id="panel-body"></div>
+  </div>
+</div>
+<div id="intro-screen">
+  <div class="intro-logo">SOCAR ONBOARDING</div>
+  <div class="intro-title">쏘카 온보딩 프로세스</div>
+  <div class="intro-subtitle">"온보딩 방탈출"</div>
+  <p class="intro-desc">오늘은 당신의 첫 출근날입니다.<br>쏘카 곳곳을 탐험하며 단서를 찾고<br>진정한 쏘팸이 되어 탈출하세요!!</p>
+  <div class="intro-meta">
+    <div class="meta-item"><div class="meta-val">3</div><div class="meta-label">ROOMS</div></div>
+    <div class="meta-item"><div class="meta-val">20:00</div><div class="meta-label">TIME LIMIT</div></div>
+    <div class="meta-item"><div class="meta-val">♥ × 3</div><div class="meta-label">LIVES</div></div>
+  </div>
+  <button class="btn-enter" onclick="startGame()">입장하기 →</button>
+</div>
+<div id="room-transition">
+  <div class="trans-dots"><div class="trans-dot"></div><div class="trans-dot"></div><div class="trans-dot"></div></div>
+  <div class="trans-label" id="trans-text">다음 공간으로 이동 중...</div>
+</div>
+<div id="end-screen">
+  <div class="end-icon" id="end-icon">🏆</div>
+  <h2 class="end-title win" id="end-title">탈출 성공!</h2>
+  <p class="end-sub" id="end-sub">쏘팸이 되었습니다!</p>
+  <div id="score-display" style="font-family:'DM Sans',sans-serif;font-size:48px;font-weight:700;color:#2b7fe1;margin-bottom:6px;letter-spacing:2px">0</div>
+  <div style="font-size:12px;color:#bbb;letter-spacing:2px;margin-bottom:1.4rem;text-transform:uppercase">SCORE</div>
+  <div class="cert">
+    <div class="cert-row"><span class="cert-label">DATE</span><span class="cert-val" id="cert-date">—</span></div>
+    <div class="cert-row"><span class="cert-label">TIME USED</span><span class="cert-val" id="cert-time">—</span></div>
+    <div class="cert-row"><span class="cert-label">MISTAKES</span><span class="cert-val" id="cert-mistakes">0회</span></div>
+    <div class="cert-row"><span class="cert-label">LIVES LEFT</span><span class="cert-val" id="cert-lives">3개</span></div>
+    <div class="cert-row" style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0">
+      <span class="cert-label">FINAL SCORE</span>
+      <span class="cert-val" id="cert-score" style="color:#2b7fe1;font-size:16px;font-weight:700">—</span>
+    </div>
+  </div>
+  <!-- 운영자 힌트 입력 -->
+  <div id="hint-input-box" style="display:none;background:#fff9f0;border:1.5px solid #f0c060;border-radius:12px;padding:16px 20px;max-width:360px;width:100%;margin:0 auto 1.2rem;text-align:left">
+    <div style="font-size:12px;color:#c08000;font-weight:700;margin-bottom:8px;letter-spacing:0.5px">⚠️ 운영자 입력</div>
+    <div style="font-size:13px;color:#666;line-height:1.6;margin-bottom:12px">힌트 사용한 갯수를 운영자가 입력할 수 있도록<br><b>운영자를 불러주세요.</b></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="number" id="hint-count-input" min="0" max="20" value="0"
+        style="width:70px;padding:8px 10px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:16px;font-weight:700;text-align:center;font-family:'DM Sans',sans-serif;outline:none"
+        oninput="recalcScore()" />
+      <span style="font-size:14px;color:#888">회 사용</span>
+      <button onclick="recalcScore()" style="margin-left:auto;padding:8px 16px;background:#2b7fe1;border:none;color:#fff;border-radius:8px;cursor:pointer;font-size:13px;font-family:'Noto Sans KR',sans-serif;font-weight:600">점수 확정</button>
+    </div>
+  </div>
+  <button class="btn-retry" onclick="resetGame()">다시 도전하기</button>
+</div>
+<div id="toast"></div>
+</div>
+<script>
+const ROOMS=[
+  {num:'01',name:'쏘카 히스토리 & 핵심가치',required:['bookshelf','whiteboard','cabinet','laptop','envelope','phone','sticky','badge']},
+  {num:'02',name:'업무 규정 & 시스템',required:['tv','wb2','notepad','pen','r2laptop','remote','r2badge1','r2badge2']},
+  {num:'03',name:'문화 & 슬랙 & 꿀팁',required:['shelf2','coffeetable','stool','plant','sofa','window','pantry','privacy','cm2']},
+];
+const ROOM_SHOW={
+  1:['r1-bookshelf','r1-whiteboard','r1-cabinet','r1-desk'],
+  2:['r2-dark-wall','r2-glass','r2-pl','r2-pr','r2-tv','r2-tv-click','r2-whiteboard2','r2-ch1','r2-ch2','r2-ch3','r2-ch4','r2-table'],
+  3:['r3-wall','r3-window','r3-floor','r3-shelf2','r3-sofa-l','r3-sofa-r','r3-coffee-tbl','r3-plant','r3-stool','r3-pantry','r3-pantry-click','r3-cm2','r3-slack-pc','r3-privacy-board'],
+};
+const ID_MAP={
+  bookshelf:'r1-bookshelf',whiteboard:'r1-whiteboard',cabinet:'r1-cabinet',badge:'r1-badge',
+  laptop:'r1-laptop',envelope:'r1-envelope',phone:'r1-phone',sticky:'r1-sticky',
+  tv:'r2-tv-click',wb2:'r2-whiteboard2',notepad:'r2-notepad',pen:'r2-pen',
+  r2laptop:'r2-laptop2',remote:'r2-remote',r2badge1:'r2-badge1',r2badge2:'r2-badge2',
+  shelf2:'r3-shelf2',coffeetable:'r3-coffee-tbl',stool:'r3-stool',cm2:'r3-cm2',
+  plant:'r3-plant',sofa:'r3-sofa-r',window:'r3-slack-pc',pantry:'r3-pantry-click',
+  privacy:'r3-privacy-board',
+};
+const PZ={
+  // ── ROOM 1: 사무실 (8문제) ──
+  bookshelf:{title:'📚 핵심가치 안내서',type:'quiz',
+    q:'다음 중 쏘카의 핵심가치가 아닌 것은?',
+    c:['User First','Speed First','Be Bold','One SOCAR'],a:1,r:'단서 1/8 ✓'},
+  whiteboard:{title:'📋 비전 보드',type:'quiz',
+    q:'쏘카의 비전으로 올바른 것은?',
+    c:['모든 사람이 자유롭고 행복하게 이동하는 세상을 만듭니다','쏘카는 기술로 모든 이동을 즐겁게 만듭니다','대한민국 1등 모빌리티 플랫폼이 됩니다','국내 최고의 카셰어링을 제공합니다'],a:1,r:'단서 2/8 ✓'},
+  cabinet:{title:'🗃 파일 캐비닛',type:'quiz',
+    q:'쏘카의 미션으로 올바른 것은?',
+    c:['모든 사람이 자유롭고 행복하게 이동하는 세상을 만듭니다','쏘카는 기술로 모든 이동을 즐겁게 만듭니다','국내 최고의 모빌리티 서비스를 제공합니다','이동의 자유를 모두에게 제공합니다'],a:0,r:'단서 3/8 ✓'},
+  laptop:{title:'💻 SOCAR 위키',type:'quiz',
+    q:'SOCAR는 무엇의 줄임말인가요?',
+    c:['Speed Car','Smart Car','Social Car','Shared Car'],a:2,r:'단서 4/8 ✓'},
+  envelope:{title:'✉️ 입사 안내서',type:'quiz',
+    q:'쏘카가 코스피에 상장한 날짜는?',
+    c:['2020년 8월 22일','2021년 8월 22일','2022년 8월 22일','2023년 8월 22일'],a:2,r:'단서 5/8 ✓'},
+  phone:{title:'📱 업무폰',type:'short',
+    q:'쏘카 창립 초기 운영한 차량은 몇 대인가요? (숫자만 입력)',
+    ans:'100',hint:'숫자만 입력하세요 (예: 3000)',r:'단서 6/8 ✓'},
+  sticky:{title:'📝 포스트잇',type:'short',
+    q:'쏘카는 몇 년에 창립되었나요? (숫자만 입력)',
+    ans:'2011',hint:'연도를 숫자로 입력하세요 (예: 1990)',r:'단서 7/8 ✓'},
+  badge:{title:'🏷 사원증',type:'quiz',
+    q:'쏘카 핵심가치 "Impact"에 대한 설명으로 올바른 것은?',
+    c:['목표 달성을 위해 모든 업무를 빠짐없이 처리한다','임팩트가 더 큰 일을 우선하고 우선순위가 낮은 일은 과감히 제거한다','팀원 모두가 동의한 일부터 순서대로 실행한다','성과보다 과정을 중시하며 꾸준히 노력한다'],a:1,r:'단서 8/8 — 방 1 탈출! 🚗'},
+
+  // ── ROOM 2: 회의실 (8문제) ──
+  tv:{title:'📺 회의실 TV',type:'quiz',
+    q:'쏘카의 점심시간은 언제인가요?',
+    c:['11:30 ~ 12:30','12:00 ~ 13:00','12:30 ~ 13:30','13:00 ~ 14:00'],a:2,r:'단서 1/8 ✓'},
+  wb2:{title:'📋 화이트보드',type:'quiz',
+    q:'쏘카의 출근 가능한 시간대 중 올바르지 않은 것은?',
+    c:['08:00','08:30','09:15','10:00'],a:2,r:'단서 2/8 ✓'},
+  notepad:{title:'📓 회의 노트',type:'quiz',
+    q:'각종 인사 증명서(재직증명서 등)는 어디서 발급받나요?',
+    c:['총무팀에 직접 요청','SOHR 시스템','이메일로 HR팀 요청','슬랙으로 요청'],a:1,r:'단서 3/8 ✓'},
+  pen:{title:'🖊 마커펜',type:'quiz',
+    q:'쏘카에서 이슈/티켓 관리에 사용하는 툴은?',
+    c:['Notion','Trello','Jira','Asana'],a:2,r:'단서 4/8 ✓'},
+  r2laptop:{title:'💻 업무 노트북',type:'safe',
+    clue:'쏘카에서 비용 처리(법인카드)에\n사용하는 시스템은?\n\nA. 사내 ERP\nB. 심플리 어카운팅\nC. 엑셀 이메일 제출\n\n정답 알파벳을 입력하세요.',
+    ans:'B',r:'단서 5/8 ✓'},
+  remote:{title:'🎮 TV 리모컨',type:'quiz',
+    q:'쏘카에서 사용할 수 있는 가장 짧은 휴가 단위는?',
+    c:['1시간 단위','반반차(2시간)','반차(4시간)','연차(8시간)'],a:1,r:'단서 6/8 ✓'},
+  r2badge1:{title:'📋 출퇴근 안내',type:'quiz',
+    q:'쏘카의 연차 규정으로 올바른 것은?',
+    c:['반반차, 반차, 연차 모두 사용 가능','연차만 사용 가능','반차와 연차만 사용 가능','분 단위로 자유롭게 사용 가능'],a:0,r:'단서 7/8 ✓'},
+  r2badge2:{title:'📊 업무 현황판',type:'quiz',
+    q:'쏘카 핵심가치 "One SOCAR"가 의미하는 것으로 올바른 것은?',
+    c:['개인 성과를 최우선으로 추구한다','전사 관점에서 역할과 목표를 고민하고 동료와 협업한다','부서 목표 달성이 전사 목표보다 중요하다','경쟁을 통해 최고의 성과를 만든다'],a:1,r:'단서 8/8 — 방 2 탈출! ☕'},
+
+  // ── ROOM 3: 라운지 (9문제) ──
+  shelf2:{title:'📚 라운지 책장',type:'quiz',
+    q:'쏘카 구성원들이 자유롭게 소통하는 슬랙 채널은?',
+    c:['#all_notice','#all_free_talk','#all_question_answer','#all_sofam'],a:1,r:'단서 1/9 ✓'},
+  coffeetable:{title:'☕ 커피 테이블',type:'quiz',
+    q:'쏘카의 공식 질문 채널은?',
+    c:['#all_free_talk','#all_sofam','#all_article','#all_question_answer'],a:3,r:'단서 2/9 ✓'},
+  stool:{title:'🟡 라운지 스툴',type:'quiz',
+    q:'#all_sofam 채널의 용도는?',
+    c:['모빌리티 관련 기사 공유','AI 시대 자유로운 대화','쏘카 경조사 및 다양한 소식','공식 공지사항 전달'],a:2,r:'단서 3/9 ✓'},
+  plant:{title:'🌿 라운지 화분',type:'quiz',
+    q:'#all_ai_first 채널의 목적으로 올바른 것은?',
+    c:['AI 뉴스 기사 공유','AI 관련 자유로운 잡담','모빌리티 AI 기사 공유','AI 시대에 맞게 일하는 방식을 재정의'],a:3,r:'단서 4/9 ✓'},
+  sofa:{title:'🛋 라운지 소파',type:'quiz',
+    q:'#all_user_first 채널(구 개밥먹기)의 목적은?',
+    c:['사용자 경험 개선 제안 공유','사내 복지 관련 소식','쏘카 유니버스 사용자 경험 공유','AI 도구 활용 사례 공유'],a:2,r:'단서 5/9 ✓'},
+  window:{title:'🪟 통유리 창문',type:'quiz',
+    q:'다양성 존중 가이드에서 올바른 것은?',
+    c:['배려가 필요하면 먼저 판단해서 도와준다','다름을 기준으로 칭찬하고 비교한다','배려가 필요할 땐 먼저 의사를 물어본다','다름은 특별대우로 존중해준다'],a:2,r:'단서 6/9 ✓'},
+  pantry:{title:'🍽 탕비실',type:'quiz',
+    q:'기자에게 취재 요청을 받았을 때 올바른 대응은?',
+    c:['회사 입장을 친절하게 직접 설명한다','빠르게 답변해 관계를 유지한다','담당자에게 연결해준다','대외협력유닛에 전달하고 직접 답변하지 않는다'],a:3,r:'단서 7/9 ✓'},
+  privacy:{title:'🔒 정보보안 안내',type:'multi',
+    q:'3월에 열리는 "제1회 천하제일 프라이버시대회"의 대상에 해당하는 것을 모두 고르시오. (2개 선택)',
+    c:['사내 admin 서비스','쏘카 앱 프론트엔드','빅쿼리 시스템','사내 인트라넷 포털'],
+    ans:[0,2],r:'단서 8/9 ✓'},
+  cm2:{title:'☕ 커피머신',type:'safe',
+    clue:'쏘카 게스트 WiFi 비밀번호는?\n\nA. socar1234\nB. socar_guest\nC. socar_superapp\n\n정답 알파벳을 입력하세요.',
+    ans:'C',r:'단서 9/9 — 탈출 성공! 🎉 진정한 쏘팸이 되었습니다!'},
+};
+
+let G={room:1,solved:{},lives:3,timeLeft:20*60,wrong:0,timer:null,started:false,hintCount:0};
+let dialCurrent={};
+
+function applyTheme(r){
+  const g=document.getElementById('game');
+  g.className=g.className.replace(/theme-\d/,'').trim()+' theme-'+r;
+  [1,2,3].forEach(n=>ROOM_SHOW[n].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display=(n===r)?'':'none';
+  }));
+}
+
+function updateGlow(){
+  document.querySelectorAll('.next-glow').forEach(el=>el.classList.remove('next-glow'));
+  if(!G.started)return;
+  const next=ROOMS[G.room-1].required.find(o=>!G.solved[G.room+'_'+o]);
+  if(!next)return;
+  const domId=ID_MAP[next];
+  if(!domId)return;
+  // 직접 ID로 찾거나, 책상 안 자식 요소도 탐색
+  let el=document.getElementById(domId);
+  if(!el){
+    // r1-desk 안 등 부모 컨테이너 안에 있을 수 있음
+    el=document.querySelector('[id="'+domId+'"]');
+  }
+  if(el)el.classList.add('next-glow');
+}
+
+function startGame(){
+  document.getElementById('intro-screen').style.display='none';
+  G.started=true; applyTheme(1); startTimer(); showBanner(); updateGlow();
+}
+
+function startTimer(){
+  clearInterval(G.timer);
+  G.timer=setInterval(()=>{G.timeLeft--;updateTimerUI();if(G.timeLeft<=0){clearInterval(G.timer);endGame(false,'timeout');}},1000);
+}
+
+function updateTimerUI(){
+  const m=Math.floor(G.timeLeft/60),s=G.timeLeft%60;
+  const el=document.getElementById('timer-box');
+  el.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  el.className='timer-box'+(G.timeLeft<=60?' danger':G.timeLeft<=180?' warn':'');
+}
+
+function showBanner(){
+  const r=ROOMS[G.room-1];
+  document.getElementById('banner-num').textContent='ROOM '+r.num;
+  document.getElementById('banner-name').textContent=r.name;
+  document.getElementById('room-indicator').textContent='ROOM '+r.num+' / 03';
+  const b=document.getElementById('room-banner');
+  b.classList.add('show');
+  setTimeout(()=>b.classList.remove('show'),2200);
+}
+
+function openPuzzle(objId){
+  if(!G.started)return;
+  const key=G.room+'_'+objId;
+  const pz=PZ[objId];
+  if(!pz)return;
+  // 순서 잠금: 이미 풀었으면 그냥 다시 보여줌. 아직 차례가 아니면 잠금.
+  const required=ROOMS[G.room-1].required;
+  const nextObj=required.find(o=>!G.solved[G.room+'_'+o]);
+  const isDone=G.solved[key];
+  const isNext=objId===nextObj;
+  if(!isDone&&!isNext){
+    document.getElementById('panel-title').textContent=pz.title;
+    document.getElementById('panel-body').innerHTML=`<div class="locked-msg"><div class="lock-emoji">🔒</div><div class="lock-text">이전 단서를 먼저 해결하세요!</div></div>`;
+    document.getElementById('overlay').classList.add('open');
+    return;
+  }
+  document.getElementById('panel-title').textContent=pz.title;
+  const body=document.getElementById('panel-body');
+  if(pz.type==='quiz') renderQuiz(body,key,pz);
+  else if(pz.type==='safe') renderSafe(body,key,pz);
+  else if(pz.type==='short') renderShort(body,key,pz);
+  else if(pz.type==='multi') renderMulti(body,key,pz);
+  document.getElementById('overlay').classList.add('open');
+}
+
+function renderMulti(body,key,pz){
+  const done=G.solved[key];
+  const selected=new Set();
+  body.innerHTML=`<div class="q-text">${pz.q}</div>
+    <div class="choices" id="mc_${key}">
+      ${pz.c.map((c,i)=>`
+        <button class="choice-btn ${done?(pz.ans.includes(i)?'correct':'faded'):''}"
+          id="mc_${key}_${i}"
+          onclick="toggleMulti('${key}',${i},${JSON.stringify(pz.ans)},'${escQ(pz.r)}')"
+          ${done?'disabled':''}>
+          <span class="choice-key" id="mck_${key}_${i}">${'ABCD'[i]}</span>
+          <span>${c}</span>
+        </button>`).join('')}
+    </div>
+    <button class="short-submit" id="msub_${key}" onclick="submitMulti('${key}',${JSON.stringify(pz.ans)},'${escQ(pz.r)}')" ${done?'disabled':''} style="margin-top:12px">선택 완료</button>
+    <div class="success-flash ${done?'show':''}" id="sf_${key}">${done?'✓ '+pz.r:''}</div>`;
+  // 선택 상태 관리
+  window._multiSelected=window._multiSelected||{};
+  window._multiSelected[key]=new Set();
+}
+
+function toggleMulti(key,idx,correct,reward){
+  if(G.solved[key])return;
+  if(!window._multiSelected)window._multiSelected={};
+  if(!window._multiSelected[key])window._multiSelected[key]=new Set();
+  const sel=window._multiSelected[key];
+  const btn=document.getElementById('mc_'+key+'_'+idx);
+  const keyEl=document.getElementById('mck_'+key+'_'+idx);
+  if(sel.has(idx)){
+    sel.delete(idx);
+    btn.classList.remove('correct');
+    btn.style.borderColor='';btn.style.background='';btn.style.color='';
+  }else{
+    sel.add(idx);
+    btn.style.borderColor='#2b7fe1';btn.style.background='#f0f6ff';btn.style.color='#2b7fe1';
+  }
+  const sub=document.getElementById('msub_'+key);
+  if(sub)sub.style.opacity=sel.size>0?'1':'0.5';
+}
+
+function submitMulti(key,correct,reward){
+  if(G.solved[key])return;
+  const sel=window._multiSelected&&window._multiSelected[key]?window._multiSelected[key]:new Set();
+  const sortedSel=Array.from(sel).sort().join(',');
+  const sortedAns=[...correct].sort().join(',');
+  const btns=document.querySelectorAll(`[id^="mc_${key}_"]`);
+  btns.forEach(b=>b.disabled=true);
+  if(sortedSel===sortedAns){
+    correct.forEach(i=>{
+      const b=document.getElementById('mc_'+key+'_'+i);
+      if(b){b.classList.add('correct');b.style.borderColor='';b.style.background='';b.style.color='';}
+    });
+    G.solved[key]=true;
+    document.getElementById('msub_'+key).disabled=true;
+    const sf=document.getElementById('sf_'+key);
+    if(sf){sf.textContent='✓ '+reward;sf.classList.add('show');}
+    updateProgress();updateGlow();checkClear();
+    showToast('정답입니다!','success');
+  }else{
+    G.wrong++;loseLife();
+    sel.forEach(i=>{
+      const b=document.getElementById('mc_'+key+'_'+i);
+      if(b&&!correct.includes(i)){b.classList.add('wrong');b.style.borderColor='';b.style.background='';b.style.color='';}
+    });
+    showToast('오답입니다. 다시 시도해보세요.','error');
+    setTimeout(()=>{
+      btns.forEach(b=>{b.disabled=false;b.classList.remove('wrong');b.style.borderColor='';b.style.background='';b.style.color='';});
+      window._multiSelected[key]=new Set();
+    },900);
+  }
+}
+
+function renderShort(body,key,pz){
+  const done=G.solved[key];
+  body.innerHTML=`<div class="q-text">${pz.q}</div>
+    <div class="short-input-wrap">
+      <input class="short-input ${done?'correct-input':''}" id="si_${key}"
+        type="text" placeholder="${pz.hint||'정답을 입력하세요'}"
+        value="${done?pz.ans:''}" ${done?'readonly':''}
+        onkeydown="if(event.key==='Enter')submitShort('${key}','${escQ(pz.ans)}','${pz.altans?escQ(pz.altans):''}','${escQ(pz.r)}')" />
+      <button class="short-submit" id="ss_${key}"
+        onclick="submitShort('${key}','${escQ(pz.ans)}','${pz.altans?escQ(pz.altans):''}','${escQ(pz.r)}')"
+        ${done?'disabled':''}>확인</button>
+    </div>
+    <div class="success-flash ${done?'show':''}" id="sf_${key}">${done?'✓ '+pz.r:''}</div>`;
+  if(!done)setTimeout(()=>{const el=document.getElementById('si_'+key);if(el)el.focus();},100);
+}
+
+function submitShort(key,correct,alt,reward){
+  if(G.solved[key])return;
+  const inp=document.getElementById('si_'+key);
+  if(!inp)return;
+  const val=inp.value.trim().toLowerCase().replace(/\s/g,'');
+  const c1=correct.toLowerCase().replace(/\s/g,'');
+  const c2=alt?alt.toLowerCase().replace(/\s/g,''):'';
+  if(val===c1||val===c2){
+    inp.classList.add('correct-input');inp.readOnly=true;
+    document.getElementById('ss_'+key).disabled=true;
+    G.solved[key]=true;
+    const sf=document.getElementById('sf_'+key);
+    if(sf){sf.textContent='✓ '+reward;sf.classList.add('show');}
+    updateProgress();updateGlow();checkClear();
+    showToast('정답입니다!','success');
+  }else{
+    inp.classList.add('wrong-input');G.wrong++;loseLife();
+    showToast('오답입니다. 다시 시도해보세요.','error');
+    setTimeout(()=>{inp.classList.remove('wrong-input');inp.value='';},900);
+  }
+}
+
+function renderQuiz(body,key,pz){
+  const done=G.solved[key];
+  body.innerHTML=`<div class="q-text">${pz.q}</div>
+    <div class="choices">${pz.c.map((c,i)=>`
+      <button class="choice-btn ${done?(i===pz.a?'correct':'faded'):''}"
+        onclick="answer(this,'${key}',${i},${pz.a},'${escQ(pz.r)}')"
+        ${done?'disabled':''}>
+        <span class="choice-key">${'ABCD'[i]}</span><span>${c}</span>
+      </button>`).join('')}
+    </div>
+    <div class="success-flash ${done?'show':''}" id="sf_${key}">${done?'✓ '+pz.r:''}</div>`;
+}
+
+function escQ(s){return s.replace(/'/g,"\\'");}
+
+function answer(btn,key,idx,correct,reward){
+  if(G.solved[key])return;
+  const btns=btn.closest('.choices').querySelectorAll('.choice-btn');
+  btns.forEach(b=>b.disabled=true);
+  if(idx===correct){
+    btn.classList.add('correct');
+    G.solved[key]=true;
+    const sf=document.getElementById('sf_'+key);
+    if(sf){sf.textContent='✓ '+reward;sf.classList.add('show');}
+    updateProgress();updateGlow();checkClear();
+    showToast('정답입니다!','success');
+  }else{
+    btn.classList.add('wrong');G.wrong++;loseLife();
+    showToast('오답입니다. 다시 시도해보세요.','error');
+    setTimeout(()=>{btn.classList.remove('wrong');btns.forEach(b=>b.disabled=false);},900);
+  }
+}
+
+function renderSafe(body,key,pz){
+  const done=G.solved[key];
+  body.innerHTML=`<div style="background:#f8f8f8;border:1px solid #eee;border-radius:8px;padding:16px;font-size:13px;line-height:1.8;color:#444;white-space:pre-line;margin-bottom:16px">${pz.clue}</div>
+    <div class="dial-puzzle">
+      <div class="dial-display" id="dd_${key}">${done?pz.ans:'_'}</div>
+      <div class="dial-hint">정답 알파벳을 선택하세요</div>
+      <div class="dial-buttons">
+        ${['A','B','C'].map(c=>`<button class="dial-btn" onclick="dialInput('${key}','${c}')" ${done?'disabled':''}>${c}</button>`).join('')}
+      </div>
+      <button class="dial-submit" onclick="submitDial('${key}','${pz.ans}','${escQ(pz.r)}')" ${done?'disabled':''}>확인</button>
+    </div>
+    <div class="success-flash ${done?'show':''}" id="sf_${key}">${done?'✓ '+pz.r:''}</div>`;
+}
+
+function dialInput(key,c){
+  dialCurrent[key]=c;
+  const d=document.getElementById('dd_'+key);
+  if(d){d.textContent=c;d.style.color='#2b7fe1';}
+}
+
+function submitDial(key,correct,reward){
+  const val=(dialCurrent[key]||'').toUpperCase();
+  if(val===correct.toUpperCase()){
+    G.solved[key]=true;
+    const d=document.getElementById('dd_'+key);
+    if(d){d.textContent=correct;d.style.color='#1a8060';}
+    document.querySelectorAll('.dial-btn,.dial-submit').forEach(b=>b.disabled=true);
+    const sf=document.getElementById('sf_'+key);
+    if(sf){sf.textContent='✓ '+reward;sf.classList.add('show');}
+    updateProgress();updateGlow();checkClear();
+    showToast('정답입니다!','success');
+  }else{
+    G.wrong++;loseLife();
+    const d=document.getElementById('dd_'+key);
+    if(d){d.style.color='#e84040';setTimeout(()=>{d.style.color='#2b7fe1';d.textContent='_';dialCurrent[key]='';},700);}
+    showToast('오답입니다. 다시 시도해보세요.','error');
+  }
+}
+
+function handleOverlayClick(e){if(e.target===document.getElementById('overlay'))closePanel();}
+function closePanel(){document.getElementById('overlay').classList.remove('open');}
+
+function checkClear(){
+  const required=ROOMS[G.room-1].required;
+  const allDone=required.every(o=>G.solved[G.room+'_'+o]);
+  if(!allDone)return;
+  setTimeout(()=>{
+    closePanel();
+    if(G.room<3){goNext();}
+    else{clearInterval(G.timer);setTimeout(()=>endGame(true),600);}
+  },1400);
+}
+
+function goNext(){
+  G.room++;
+  const trans=document.getElementById('room-transition');
+  document.getElementById('trans-text').textContent=ROOMS[G.room-1].name+'으로 이동 중...';
+  trans.classList.add('show');
+  setTimeout(()=>{applyTheme(G.room);trans.classList.remove('show');showBanner();updateProgress();updateGlow();},1400);
+}
+
+function updateProgress(){
+  const total=ROOMS.reduce((a,r)=>a+r.required.length,0);
+  const done=ROOMS.reduce((a,r,ri)=>a+r.required.filter(o=>G.solved[(ri+1)+'_'+o]).length,0);
+  document.getElementById('progress-fill').style.width=(done/total*100)+'%';
+}
+
+function loseLife(){
+  G.lives=Math.max(0,G.lives-1);
+  document.querySelectorAll('.heart').forEach((h,i)=>h.className='heart'+(i>=G.lives?' empty':''));
+  if(G.lives<=0){clearInterval(G.timer);setTimeout(()=>endGame(false,'lives'),800);}
+}
+
+function calcScore(elapsed, lives, hintCount){
+  const base = Math.max(0, 1200 - elapsed);
+  const livesBonus = 1 + lives * 0.3;
+  const hintPenalty = hintCount * 50;
+  return Math.max(0, Math.round(base * livesBonus - hintPenalty));
+}
+
+function animateScore(score){
+  const scoreEl = document.getElementById('score-display');
+  const certScore = document.getElementById('cert-score');
+  certScore.textContent = score.toLocaleString() + '점';
+  let cur = 0;
+  const step = Math.max(1, Math.ceil(score / 60));
+  const anim = setInterval(()=>{
+    cur = Math.min(cur + step, score);
+    scoreEl.textContent = cur.toLocaleString();
+    if(cur >= score) clearInterval(anim);
+  }, 16);
+}
+
+function recalcScore(){
+  const elapsed = 20*60 - G.timeLeft;
+  const hintInput = document.getElementById('hint-count-input');
+  const hintCount = parseInt(hintInput ? hintInput.value : 0) || 0;
+  const score = calcScore(elapsed, G.lives, hintCount);
+  animateScore(score);
+  document.getElementById('cert-score').textContent = score.toLocaleString() + '점';
+}
+
+function endGame(win,reason){
+  closePanel();
+  const elapsed=20*60-G.timeLeft;
+  const em=Math.floor(elapsed/60),es=elapsed%60;
+  const today=new Date();
+
+  document.getElementById('end-icon').textContent=win?'🏆':(reason==='timeout'?'⏰':'💀');
+  document.getElementById('end-title').textContent=win?'탈출 성공! 🎉':(reason==='timeout'?'시간 초과':'도전 실패');
+  document.getElementById('end-title').className='end-title '+(win?'win':'lose');
+  document.getElementById('end-sub').textContent=win?'진정한 쏘팸이 되었습니다!\n이제 쏘카에서의 여정을 시작하세요 🚗':(reason==='timeout'?'시간이 다 됐어요! 다시 도전해보세요.':'생명이 모두 소진됐어요. 다시 도전해보세요.');
+  document.getElementById('cert-date').textContent=today.getFullYear()+'년 '+(today.getMonth()+1)+'월 '+today.getDate()+'일';
+  document.getElementById('cert-time').textContent=String(em).padStart(2,'0')+'분 '+String(es).padStart(2,'0')+'초';
+  document.getElementById('cert-mistakes').textContent=G.wrong+'회';
+  document.getElementById('cert-lives').textContent=G.lives+'개';
+
+  const scoreEl=document.getElementById('score-display');
+  const certScore=document.getElementById('cert-score');
+  const hintBox=document.getElementById('hint-input-box');
+  const hintInput=document.getElementById('hint-count-input');
+
+  if(win){
+    if(hintInput) hintInput.value='0';
+    if(hintBox) hintBox.style.display='block';
+    const score=calcScore(elapsed, G.lives, 0);
+    animateScore(score);
+  }else{
+    scoreEl.textContent='—';
+    certScore.textContent='도전 실패';
+    certScore.style.color='#aaa';
+    if(hintBox) hintBox.style.display='none';
+  }
+
+  document.getElementById('end-screen').classList.add('show');
+}
+
+function resetGame(){
+  clearInterval(G.timer);
+  G={room:1,solved:{},lives:3,timeLeft:20*60,wrong:0,timer:null,started:false,hintCount:0};
+  dialCurrent={};
+  if(window._multiSelected)window._multiSelected={};
+  document.querySelectorAll('.heart').forEach(h=>h.className='heart');
+  document.getElementById('progress-fill').style.width='0%';
+  document.getElementById('timer-box').textContent='20:00';
+  document.getElementById('timer-box').className='timer-box';
+  document.getElementById('room-indicator').textContent='ROOM 01 / 03';
+  document.getElementById('end-screen').classList.remove('show');
+  document.getElementById('score-display').textContent='0';
+  const cs=document.getElementById('cert-score');
+  if(cs){cs.textContent='—';cs.style.color='#2b7fe1';}
+  const hb=document.getElementById('hint-input-box');
+  if(hb)hb.style.display='none';
+  const hi=document.getElementById('hint-count-input');
+  if(hi)hi.value='0';
+  document.querySelectorAll('.next-glow').forEach(el=>el.classList.remove('next-glow'));
+  applyTheme(1);
+  document.getElementById('intro-screen').style.display='flex';
+}
+
+function toggleHint(){
+  document.getElementById('hint-popup').classList.toggle('open');
+}
+document.addEventListener('click',e=>{
+  const p=document.getElementById('hint-popup'),b=document.getElementById('hint-btn');
+  if(p&&b&&!p.contains(e.target)&&!b.contains(e.target))p.classList.remove('open');
+});
+
+let _tt;
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show toast-'+(type||'success');
+  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+applyTheme(1);
+</script>
+</body>
+</html>
